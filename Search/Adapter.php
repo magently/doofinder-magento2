@@ -94,7 +94,7 @@ class Adapter implements AdapterInterface
         $response = [
             'documents' => $rawDocuments,
             'aggregations' => $aggregations,
-            'total' => count($rawDocuments),
+            'total' => $this->search->getResults()->getProperty('total'),
         ];
         return $this->responseFactory->create($response);
     }

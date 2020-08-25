@@ -76,10 +76,14 @@ class Search extends \Magento\Framework\App\Helper\AbstractHelper
     {
         $hashId = $this->storeConfig->getHashId($this->getStoreCode());
         $apiKey = $this->storeConfig->getApiKey();
-        $limit = $this->storeConfig->getSearchRequestLimit();
-        $options['rpp'] = $limit;
-
         $client = $this->searchFactory->create($hashId, $apiKey);
+        $resultsArr = [];
+        $getAll = false;
+
+        if ($options['rpp'] > 100) {
+            $options['rpp'] = 100;
+            $getAll = true;
+        }
 
         try {
             $results = $client->query(
@@ -87,6 +91,24 @@ class Search extends \Magento\Framework\App\Helper\AbstractHelper
                 null,
                 $options
             );
+            $resultsArr = $results->getResults();
+
+            if ($getAll) {
+                $pages = ceil((int) $results->getProperty('total') / 100) - 1;
+
+                while ($pages > 0) {
+                    $options['page'] += 1;
+
+                    $results = $client->query(
+                        $queryText,
+                        null,
+                        $options
+                    );
+
+                    $resultsArr = array_merge($resultsArr, $results->getResults());
+                    $pages--;
+                }
+            }
         } catch (\Doofinder\Api\Search\Error $e) {
             $results = null;
             $this->_logger->critical($e->getMessage());
@@ -96,7 +118,12 @@ class Search extends \Magento\Framework\App\Helper\AbstractHelper
         $this->lastSearch = $client;
         $this->lastResults = $results;
 
-        return $results->getResults();
+        return $resultsArr;
+    }
+
+    public function getResults()
+    {
+        return $this->lastResults;
     }
 
     /**

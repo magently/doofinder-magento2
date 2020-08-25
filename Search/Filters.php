@@ -46,6 +46,11 @@ class Filters
         $must = $request->getQuery()->getMust();
         $categoryId = null;
 
+        $page = $request->getFrom() / $request->getSize();
+        $page++;
+        $filters['rpp'] = (string) $request->getSize();
+        $filters['page'] = $page;
+
         foreach ($must as $filter) {
             $ref = $filter->getReference();
 
